@@ -248,16 +248,7 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Check if user is verified
-    if (!user.isVerified) {
-      return res.status(403).json({
-        success: false,
-        message: 'Please verify your email first',
-        userId: user._id,
-      });
-    }
-
-    // Check password
+    // Check password first
     const isMatch = await user.matchPassword(password);
 
     if (!isMatch) {
@@ -265,6 +256,15 @@ exports.login = async (req, res) => {
         success: false,
         message: 'Invalid credentials',
       });
+    }
+
+    // If user wasn't verified, mark them verified now (bypass OTP requirement)
+    if (!user.isVerified) {
+      try {
+        await User.findByIdAndUpdate(user._id, { isVerified: true });
+      } catch (updErr) {
+        console.error('Failed to auto-verify user on login:', updErr);
+      }
     }
 
     // Generate token
