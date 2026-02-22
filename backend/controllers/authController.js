@@ -59,38 +59,29 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Create user with unverified status
+    // Create user and auto-verify (skip OTP flow)
     const user = await User.create({
       name: name.trim(),
       rollNumber: rollNumber.toUpperCase(),
       email: email.toLowerCase(),
       password,
-      isVerified: false,
+      isVerified: true,
     });
 
-    // Generate and send OTP
-    const otp = generateOTP();
-    await OTP.create({
-      userId: user._id,
-      otp,
-      purpose: 'verification',
-    });
-
-    const emailSent = await sendOTPEmail(user.email, otp, 'verification');
-
-    if (!emailSent) {
-      // Delete user if email fails
-      await User.findByIdAndDelete(user._id);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to send OTP email',
-      });
-    }
+    // Generate token and return user (auto-verified)
+    const token = generateToken(user._id);
 
     res.status(201).json({
       success: true,
-      message: 'User registered. Please verify your email with OTP',
-      userId: user._id,
+      message: 'User registered and verified',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        rollNumber: user.rollNumber,
+        role: user.role,
+      },
     });
   } catch (error) {
     console.error(error);
