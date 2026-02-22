@@ -63,7 +63,6 @@ const Settings = () => {
       
       if (response.data && response.data.settings) {
         const settingsData = response.data.settings;
-        setUserSettings(settingsData);
         setSettings(settingsData.notifications || {
           emailNotifications: true,
           pushNotifications: true,
